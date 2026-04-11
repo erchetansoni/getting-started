@@ -1,0 +1,23 @@
+# Step 1: Specify the base image
+# We start with a full Golang environment (easy but large)
+FROM golang:1.26.2
+
+# Step 2: Set the working directory
+# This is like 'cd' into a folder inside the container
+WORKDIR /app
+
+# Step 3: Copy your project files
+# Copy everything from your local machine into the container
+COPY . .
+
+# Step 4 & 5: Build the app
+# We tell Go to look inside the 'backend' folder and build a file named 'main'
+RUN go build -C backend -o ../main .
+
+# Step 6: Document the port
+# This tells people the app uses port 8080
+EXPOSE 8080
+
+# Step 7: Run the app
+# The command that starts everything
+CMD ["./main"]

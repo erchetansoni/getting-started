@@ -1,0 +1,15 @@
+# Docker ignore file
+backend/main
+backend/*.exe
+backend/*.test
+backend/__debug_bin
+.git
+.gitignore
+README.md
+docker-compose.yml
+.env
+node_modules
+dist
+.vscode
+.idea
+data/
