@@ -152,3 +152,6 @@ If you change your password in `.env`, you must delete that folder and start ove
 
 ### "404 Page Not Found"
 **The Context Principle**: Only run the `go run ./backend` command from the **root** folder. If you are inside the `backend/` folder, the app won't be able to find the `frontend/` folder!
+
+---
+Built with ❤️ by [ErChetanSoni.github.io](https://ErChetanSoni.github.io)
