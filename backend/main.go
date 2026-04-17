@@ -22,7 +22,13 @@ func main() {
 	defer db.Close()
 
 	// Serve static files from the frontend directory
-	fs := http.FileServer(http.Dir("./frontend"))
+	frontendDir := "./frontend"
+	if _, err := os.Stat(frontendDir); os.IsNotExist(err) {
+		if _, err := os.Stat("../frontend"); err == nil {
+			frontendDir = "../frontend"
+		}
+	}
+	fs := http.FileServer(http.Dir(frontendDir))
 	http.Handle("/", fs)
 
 	// API endpoints
