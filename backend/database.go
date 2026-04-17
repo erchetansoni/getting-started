@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
-	_ "github.com/lib/pq"
+	_ "modernc.org/sqlite"
 )
 
 var db *sql.DB
@@ -18,16 +19,19 @@ type Todo struct {
 }
 
 func initDB() {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-	)
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./data/todos.db"
+	}
+
+	// Ensure the directory for the database file exists
+	dir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Fatalf("Failed to create database directory %s: %v", dir, err)
+	}
 
 	var err error
-	db, err = sql.Open("postgres", connStr)
+	db, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,13 +41,20 @@ func initDB() {
 		log.Fatal(err)
 	}
 
+	// Enable WAL mode for better concurrent read performance
+	_, err = db.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		log.Printf("Warning: could not set WAL mode: %v", err)
+	}
+
+	fmt.Printf("📦 Database connected: %s\n", dbPath)
 	createTable()
 }
 
 func createTable() {
 	query := `
 	CREATE TABLE IF NOT EXISTS todos (
-		id SERIAL PRIMARY KEY,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
 		completed BOOLEAN DEFAULT FALSE
 	);`
@@ -73,17 +84,20 @@ func getTodos() ([]Todo, error) {
 }
 
 func createTodo(title string) (int, error) {
-	var id int
-	err := db.QueryRow("INSERT INTO todos (title) VALUES ($1) RETURNING id", title).Scan(&id)
-	return id, err
+	result, err := db.Exec("INSERT INTO todos (title) VALUES (?)", title)
+	if err != nil {
+		return 0, err
+	}
+	id, err := result.LastInsertId()
+	return int(id), err
 }
 
 func toggleTodo(id int, completed bool) error {
-	_, err := db.Exec("UPDATE todos SET completed = $1 WHERE id = $2", completed, id)
+	_, err := db.Exec("UPDATE todos SET completed = ? WHERE id = ?", completed, id)
 	return err
 }
 
 func deleteTodo(id int) error {
-	_, err := db.Exec("DELETE FROM todos WHERE id = $1", id)
+	_, err := db.Exec("DELETE FROM todos WHERE id = ?", id)
 	return err
 }

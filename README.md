@@ -1,15 +1,16 @@
-# 🚀 Modern Go Todo App with Docker & PG
+# 🚀 Modern Go Todo App with Docker
 
 This project is designed as dual-purpose: a production-ready Todo application and a **comprehensive teaching resource** for students new to Docker.
+
+**Zero external dependencies** — uses SQLite (embedded), so you can spin it up instantly with just `go run ./backend`.
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Backend**: Go (Golang) - Standard library + `lib/pq`
+- **Backend**: Go (Golang) - Standard library + pure-Go SQLite
 - **Frontend**: Vanilla HTML5, CSS3 (Glassmorphism), and Javascript
-- **Database**: PostgreSQL 18
-- **DB Management**: pgAdmin 4
+- **Database**: SQLite (embedded, via `modernc.org/sqlite`)
 - **Containerization**: Docker & Docker Compose
 
 ---
@@ -23,13 +24,14 @@ This project is designed as dual-purpose: a production-ready Todo application an
 │   ├── Dockerfile         # Multi-stage build (Production)
 │   ├── Dockerfile.simple  # Single-stage build (Teaching/Demo)
 │   ├── main.go            # HTTP Server & API handling
-│   └── database.go        # PG Connection & Queries
+│   └── database.go        # SQLite Connection & Queries
 ├── frontend/
 │   ├── index.html         # Modern UI Structure
 │   └── style.css          # Premium Styling
-├── data/                  # Local persistence for DB
+├── data/                  # SQLite database storage
+│   └── todos.db           # Auto-created on first run
 ├── docker-compose.yml     # Service orchestration
-├── .env                   # Environment variables for Docker
+├── .env                   # Environment variables
 ├── go.mod                 # Go module definition
 ├── go.sum                 # Go dependencies checksum
 └── .dockerignore          # Keeps images lean
@@ -39,43 +41,54 @@ This project is designed as dual-purpose: a production-ready Todo application an
 
 ## 🛠 Prerequisites & Installation
 
-Before you begin, make sure you have the following tools installed. You can check if they are already installed by running the commands below in your terminal.
-
 ### 1. Go (Golang)
 - **Install**: Download the installer from [go.dev/dl](https://go.dev/dl/) and follow the steps.
 - **Verify**: Open your terminal and run `go version`.
   - *Expected*: `go version go1.22.x ...`
 
-### 2. Docker & Docker Compose
+### 2. Docker & Docker Compose (Optional — only for container scenarios)
 - **Install**: Download **Docker Desktop** from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/).
 - **Verify**: Run `docker compose version` in your terminal.
   - *Expected*: `Docker Compose version v2.x.x...`
+
+> [!TIP]
+> **No Docker needed to run locally!** Unlike the previous version, you no longer need Docker, PostgreSQL, or any external database. Just `go run ./backend` and you're done.
+
+---
+
+## 🚀 Quick Start (Fastest Way)
+
+```bash
+# Clone the repo
+git clone <your-repo-url> && cd getting-started
+
+# Run it!
+go run ./backend
+```
+
+👉 **Visit**: `http://localhost:8080` — that's it!
+
+Your data is saved in `./data/todos.db` and persists across restarts.
 
 ---
 
 ## 🎓 Learning Journey: From Local to Pro
 
-### 🟢 Level 1: Scenario 1 - Hybrid Setup (Local Code + Docker DB)
-**Goal**: Run the database in Docker to keep your machine clean, but run the Go app in your terminal for fast debugging.
+### 🟢 Level 1: Run Locally (No Docker Required!)
+**Goal**: Run the complete app with zero setup. No Docker, no external DB, nothing.
 
-#### 1. Start the Database only
-```bash
-docker compose up -d db pgadmin
-```
-
-#### 2. Run the App
-From the project root, run:
 ```bash
 go run ./backend
 ```
+
 👉 **Visit**: `http://localhost:8080`
 
 > [!TIP]
-> **Learning Point**: In this scenario, the app is outside Docker, so it uses `localhost` to find the database on port `5432`.
+> **Learning Point**: SQLite is an embedded database — it runs inside your Go process and stores data in a single file (`./data/todos.db`). No server to manage!
 
 ---
 
-### 🔵 Level 2: Scenario 2 - Standalone Container (`Dockerfile.simple`)
+### 🔵 Level 2: Standalone Container (`Dockerfile.simple`)
 **Goal**: Package your app into a "container image" and run it as an isolated unit.
 
 #### 1. Build your "Image"
@@ -86,17 +99,15 @@ docker build -t my-simple-app -f backend/Dockerfile.simple .
 #### 2. Run the Container
 ```bash
 docker run -p 8081:8080 \
-  --network getting-started_todo-network \
-  --env-file .env \
-  -e DB_HOST=db \
+  -v $(pwd)/data:/app/data \
   my-simple-app
 ```
 👉 **Visit**: `http://localhost:8081`
 
 > [!IMPORTANT]
-> **The Networking Lesson**: 
-> - Inside a container, `localhost` means *the container itself*. 
-> - To find the database, we use the name **`db`** (the service name in Docker Compose).
+> **The Volume Lesson**:
+> - We use `-v $(pwd)/data:/app/data` to persist the SQLite database.
+> - Without this, your todos would disappear when the container stops!
 
 ---
 
@@ -105,53 +116,47 @@ docker run -p 8081:8080 \
 
 #### Why is the "Pro" version better?
 1. **Multi-Stage Builds**: We use one stage to build and a separate one to run.
-2. **Alpine Linux**: We use a tiny base image. The size drops from **800MB to 20MB**!
+2. **Alpine Linux**: We use a tiny base image. The size drops from **800MB to ~20MB**!
 3. **Security**: We create a `non-root` user so the app doesn't have system admin access.
 
 ---
 
-### ⚛️ Level 4: Scenario 3 - Full Orchestration (Docker Compose)
-**Goal**: One command to rule them all. Start the App, DB, and pgAdmin together.
+### ⚛️ Level 4: Docker Compose
+**Goal**: One command to start everything with proper configuration.
 
 #### Start everything:
 ```bash
 docker compose up -d --build
 ```
 👉 **Visit App**: `http://localhost:8081`
-👉 **Visit pgAdmin**: `http://localhost:5051`
+
+#### Stop everything:
+```bash
+docker compose down
+```
+
+> [!TIP]
+> **Compose Advantage**: Even with a single service, docker-compose.yml serves as "infrastructure as code" — it documents your port mappings, volumes, and environment variables in one place.
 
 ---
 
-## 🛠 Database Management with pgAdmin
+## ❓ Troubleshooting
 
-Once you have started Scenario 1, 2, or 3, you can use **pgAdmin** to browse your database tables.
-
-1.  **Open Browser**: Go to [http://localhost:5051](http://localhost:5051)
-2.  **Login**: Use the credentials from your `.env` file:
-    - **Email**: `admin@example.com`
-    - **Password**: `adminpass`
-3.  **Register your Server**:
-    - Right-click "Servers" -> "Register" -> "Server..."
-    - **General Tab**: Name it `TodoDB`
-    - **Connection Tab**:
-      - **Host name/address**: Use `db` (This is the Docker network name!)
-      - **Maintenance database**: `tododb`
-      - **Username**: `postgres`
-      - **Password**: `postgres`
-4.  **See your data**: Navigate to `TodoDB` -> `Databases` -> `tododb` -> `Schemas` -> `public` -> `Tables` -> `todos`.
+### "404 Page Not Found"
+**The Context Principle**: Only run the `go run ./backend` command from the **root** folder. If you are inside the `backend/` folder, the app won't be able to find the `frontend/` folder!
 
 ### "I changed the code but it didn't change in Docker!"
 **The Image Principle**: Docker images are fixed. If you change a line of Go code, you **must build it again** (Level 2 or 4) or it will keep running the old "snapshot."
 
-### "Connection Refused or Password Failed"
-**The Persistence Principle**: Docker uses "Bind Mounts" to save your data in `./data/db-data`.
-If you change your password in `.env`, you must delete that folder and start over:
-1. `docker compose down`
-2. `sudo rm -rf ./data/db-data/*`
-3. `docker compose up -d`
+### "Database locked" errors
+SQLite uses file-level locking. Make sure only one instance of the app is running at a time. The app uses WAL mode for better read concurrency.
 
-### "404 Page Not Found"
-**The Context Principle**: Only run the `go run ./backend` command from the **root** folder. If you are inside the `backend/` folder, the app won't be able to find the `frontend/` folder!
+### Resetting the database
+Simply delete the database file and restart:
+```bash
+rm ./data/todos.db
+go run ./backend
+```
 
 ---
 Built with ❤️ by [ErChetanSoni.github.io](https://ErChetanSoni.github.io)
