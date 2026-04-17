@@ -4,8 +4,8 @@ FROM golang:1.26.2-alpine3.23 AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy go mod and sum files
-COPY go.mod go.sum ./
+# Copy go mod and sum files (now inside backend/)
+COPY backend/go.mod backend/go.sum ./
 
 # Download dependencies
 RUN go mod download

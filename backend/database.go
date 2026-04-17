@@ -24,6 +24,16 @@ func initDB() {
 		dbPath = "./data/todos.db"
 	}
 
+	// Adjust relative paths when running directly from the backend directory
+	// (e.g. via `go run -C backend .`)
+	if _, err := os.Stat("main.go"); err == nil {
+		if _, err := os.Stat("../frontend"); err == nil {
+			if dbPath == "./data/todos.db" {
+				dbPath = "../data/todos.db"
+			}
+		}
+	}
+
 	// Ensure the directory for the database file exists
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

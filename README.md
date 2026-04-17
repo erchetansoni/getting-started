@@ -2,7 +2,10 @@
 
 This project is designed as dual-purpose: a production-ready Todo application and a **comprehensive teaching resource** for students new to Docker.
 
-**Zero external dependencies** — uses SQLite (embedded), so you can spin it up instantly with just `go run ./backend`.
+**Zero external dependencies** — uses SQLite (embedded), so you can spin it up instantly with just below cmd
+```bash
+go run -C backend .
+```
 
 ---
 
@@ -24,7 +27,9 @@ This project is designed as dual-purpose: a production-ready Todo application an
 │   ├── Dockerfile         # Multi-stage build (Production)
 │   ├── Dockerfile.simple  # Single-stage build (Teaching/Demo)
 │   ├── main.go            # HTTP Server & API handling
-│   └── database.go        # SQLite Connection & Queries
+│   ├── database.go        # SQLite Connection & Queries
+│   ├── go.mod             # Go module definition
+│   └── go.sum             # Go dependencies checksum
 ├── frontend/
 │   ├── index.html         # Modern UI Structure
 │   └── style.css          # Premium Styling
@@ -32,8 +37,6 @@ This project is designed as dual-purpose: a production-ready Todo application an
 │   └── todos.db           # Auto-created on first run
 ├── docker-compose.yml     # Service orchestration
 ├── .env                   # Environment variables
-├── go.mod                 # Go module definition
-├── go.sum                 # Go dependencies checksum
 └── .dockerignore          # Keeps images lean
 ```
 
@@ -52,7 +55,7 @@ This project is designed as dual-purpose: a production-ready Todo application an
   - *Expected*: `Docker Compose version v2.x.x...`
 
 > [!TIP]
-> **No Docker needed to run locally!** Unlike the previous version, you no longer need Docker, PostgreSQL, or any external database. Just `go run ./backend` and you're done.
+> **No Docker needed to run locally!** Unlike the previous version, you no longer need Docker, PostgreSQL, or any external database. Just `go run -C backend .` and you're done.
 
 ---
 
@@ -63,7 +66,7 @@ This project is designed as dual-purpose: a production-ready Todo application an
 git clone <your-repo-url> && cd getting-started
 
 # Run it!
-go run ./backend
+go run -C backend .
 ```
 
 👉 **Visit**: `http://localhost:8080` — that's it!
@@ -78,7 +81,7 @@ Your data is saved in `./data/todos.db` and persists across restarts.
 **Goal**: Run the complete app with zero setup. No Docker, no external DB, nothing.
 
 ```bash
-go run ./backend
+go run -C backend .
 ```
 
 👉 **Visit**: `http://localhost:8080`
@@ -99,7 +102,7 @@ docker build -t my-simple-app -f backend/Dockerfile.simple .
 #### 2. Run the Container
 ```bash
 docker run -p 8081:8080 \
-  -v $(pwd)/data:/app/data \
+  -v "$(pwd)/data:/app/data" \
   my-simple-app
 ```
 👉 **Visit**: `http://localhost:8081`
@@ -112,11 +115,11 @@ docker run -p 8081:8080 \
 ---
 
 ### 🔴 Level 3: Professional Optimization
-`Dockerfile.simple` is great for learning, but it creates a large image (~800MB). In production, we use the optimized **`backend/Dockerfile`**.
+`Dockerfile.simple` is great for learning, but it creates a large image (~471MB). In production, we use the optimized **`backend/Dockerfile`**.
 
 #### Why is the "Pro" version better?
 1. **Multi-Stage Builds**: We use one stage to build and a separate one to run.
-2. **Alpine Linux**: We use a tiny base image. The size drops from **800MB to ~20MB**!
+2. **Alpine Linux**: We use a tiny base image. The size drops from **~471MB to ~12MB**!
 3. **Security**: We create a `non-root` user so the app doesn't have system admin access.
 
 ---
@@ -128,7 +131,7 @@ docker run -p 8081:8080 \
 ```bash
 docker compose up -d --build
 ```
-👉 **Visit App**: `http://localhost:8081`
+👉 **Visit App**: `http://localhost:8082`
 
 #### Stop everything:
 ```bash
@@ -143,7 +146,7 @@ docker compose down
 ## ❓ Troubleshooting
 
 ### "404 Page Not Found"
-**The Context Principle**: Only run the `go run ./backend` command from the **root** folder. If you are inside the `backend/` folder, the app won't be able to find the `frontend/` folder!
+**The Context Principle**: Only run the `go run -C backend .` command from the **root** folder. The `-C` flag tells Go where to find the code, but the app still looks for `./frontend` relative to where you ran the command.
 
 ### "I changed the code but it didn't change in Docker!"
 **The Image Principle**: Docker images are fixed. If you change a line of Go code, you **must build it again** (Level 2 or 4) or it will keep running the old "snapshot."
@@ -155,7 +158,7 @@ SQLite uses file-level locking. Make sure only one instance of the app is runnin
 Simply delete the database file and restart:
 ```bash
 rm ./data/todos.db
-go run ./backend
+go run -C backend .
 ```
 
 ---
