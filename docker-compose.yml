@@ -2,69 +2,22 @@
 services:
   # Go Application
   app:
+    image: todo-app:latest
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: todo-app-container
     hostname: todo-app-hostname
     ports:
-      - "${PORT:-8081}:${PORT:-8080}"
+      - "${PORT:-8082}:${PORT:-8080}"
     environment:
-      - DB_HOST=${DB_HOST:-db}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_NAME=${DB_NAME:-tododb}
       - PORT=${PORT:-8080}
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - todo-network
-
-  # PostgreSQL Database
-  db:
-    image: postgres:18.3-alpine3.23
-    container_name: todo-db-container
-    hostname: todo-db-hostname
-    environment:
-      - POSTGRES_USER=${DB_USER:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
-      - POSTGRES_DB=${DB_NAME:-tododb}
-    ports:
-      - "5432:5432"
+      - DB_PATH=/app/data/todos.db
     volumes:
-      - ./data/db-data:/var/lib/postgresql/18/docker
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - todo-network
-
-  # pgAdmin for DB Management
-  pgadmin:
-    image: dpage/pgadmin4:9.14.0
-    container_name: todo-pgadmin-container
-    hostname: todo-pgadmin-hostname
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-'admin@example.com'}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-'adminpass'}
-    ports:
-      - "${PGADMIN_HOST_PORT:-5051}:80"
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    depends_on:
-      - db
+      - ./data:/app/data
     networks:
       - todo-network
 
 networks:
   todo-network:
     driver: bridge
-
-volumes:
-  pgadmin-data:
-    # Docker-managed volume (prevents permission issues on Linux)
-
