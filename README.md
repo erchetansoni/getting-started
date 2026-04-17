@@ -63,7 +63,7 @@ go run -C backend .
 
 ```bash
 # Clone the repo
-git clone <your-repo-url> && cd getting-started
+git clone https://github.com/erchetansoni/getting-started.git && cd getting-started
 
 # Run it!
 go run -C backend .
