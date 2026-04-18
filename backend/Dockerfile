@@ -8,6 +8,8 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 
 # Download dependencies
+RUN apk add --no-cache git
+ENV GOPROXY=direct
 RUN go mod download
 
 # Copy source code
